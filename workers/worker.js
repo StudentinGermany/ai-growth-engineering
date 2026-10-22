@@ -7,7 +7,8 @@
 //
 // Check the current model list in the Cloudflare docs, because models are retired over time.
 
-const MODEL = "@cf/meta/llama-3.1-8b-instruct";
+// const MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 const ALLOWED_ORIGIN = "*"; // later restrict to "https://studentingermany.github.io"
 const DAILY_GLOBAL_CAP = 60; // keep below the free daily allowance
 const DAILY_PER_IP_CAP = 5;
