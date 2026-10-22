@@ -1,0 +1,248 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Google Review Summary | AI Growth Engineering</title>
+  <meta name="description" content="Discover common praise, complaints and improvement opportunities in available Google business reviews.">
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #18212f;
+      background: #f5f7fa;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 18px 64px; }
+    .nav { margin-bottom: 32px; }
+    .nav a { color: #344054; text-decoration: none; }
+    h1 { font-size: clamp(28px, 5vw, 38px); margin-bottom: 10px; }
+    h2 { font-size: 19px; margin-top: 0; }
+    p { line-height: 1.6; color: #526071; }
+    .card {
+      background: white; border: 1px solid #e0e5ec;
+      border-radius: 16px; padding: 22px; margin-top: 18px;
+    }
+    label { display: block; font-weight: 600; margin: 16px 0 7px; }
+    input, select {
+      width: 100%; padding: 12px; border: 1px solid #cbd3df;
+      border-radius: 9px; font: inherit; background: white;
+    }
+    button {
+      border: 0; border-radius: 9px; padding: 13px 17px;
+      background: #185adb; color: white; font: inherit;
+      font-weight: 650; cursor: pointer;
+    }
+    button:disabled { opacity: .55; cursor: wait; }
+    .primary { width: 100%; margin-top: 20px; }
+    .muted { font-size: 13px; }
+    .status { margin-top: 16px; overflow-wrap: anywhere; }
+    .error { color: #b42318; }
+    .result { display: none; }
+    .pill {
+      display: inline-block; padding: 5px 9px; border-radius: 99px;
+      background: #edf3ff; color: #194ba5; font-size: 13px;
+    }
+    .theme { padding: 12px 0; border-bottom: 1px solid #edf0f4; }
+    .theme:last-child { border-bottom: 0; }
+    .count { font-size: 13px; color: #667085; }
+    .premium { background: #f0f3f8; border: 1px dashed #a8b4c6; }
+    .footer { margin-top: 28px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<main>
+  <nav class="nav">
+    <a href="../index.html">← AI Growth Engineering</a>
+  </nav>
+
+  <h1>Google Review Summary</h1>
+  <p>
+    Discover what customers praise, where a trade business can improve,
+    and what action the owner could take next.
+  </p>
+
+  <section class="card">
+    <form id="search-form">
+      <label for="business">Business name</label>
+      <input id="business" name="business" required minlength="2"
+        maxlength="120" placeholder="e.g. Müller Plumbing">
+
+      <label for="city">City (optional)</label>
+      <input id="city" name="city" maxlength="60"
+        placeholder="e.g. Hamburg">
+
+      <label for="language">Report language</label>
+      <select id="language" name="language">
+        <option value="en">English</option>
+        <option value="de">German</option>
+      </select>
+
+      <button class="primary" id="submit" type="submit">
+        Analyse available reviews
+      </button>
+    </form>
+    <p class="muted">
+      This prototype analyses the written reviews returned by Google Places.
+      It does not guarantee complete review history or a specific date range.
+    </p>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="results" class="result" aria-live="polite">
+    <div class="card">
+      <h2 id="place-name"></h2>
+      <p id="place-address"></p>
+      <p id="place-rating"></p>
+      <span id="coverage" class="pill"></span>
+    </div>
+
+    <div class="card">
+      <h2>Overall sentiment</h2>
+      <p id="sentiment"></p>
+      <p id="confidence" class="muted"></p>
+    </div>
+
+    <div class="card">
+      <h2>What customers praise</h2>
+      <div id="praised"></div>
+    </div>
+
+    <div class="card">
+      <h2>Common complaints</h2>
+      <div id="complaints"></div>
+    </div>
+
+    <div class="card">
+      <h2>Communication and administration</h2>
+      <div id="admin"></div>
+    </div>
+
+    <div class="card">
+      <h2>Suggested improvement</h2>
+      <p id="quick-win"></p>
+    </div>
+
+    <div class="card premium">
+      <h2>Premium review intelligence — planned</h2>
+      <p>
+        A future version may support larger review histories, historical
+        comparisons and deeper trend analysis where the data source permits.
+        This feature is not available in the current prototype.
+      </p>
+    </div>
+  </section>
+
+  <p class="footer">
+    Google review availability is limited by the API. Results are AI-generated
+    and may be imperfect. This prototype is not affiliated with Google.
+  </p>
+</main>
+
+<script>
+  // Existing Cloudflare Worker from Experiment 1.
+  const WORKER = "https://website-quick-check.trippylugo.workers.dev";
+
+  const form = document.querySelector("#search-form");
+  const submit = document.querySelector("#submit");
+  const status = document.querySelector("#status");
+  const results = document.querySelector("#results");
+
+  function showThemes(containerId, themes) {
+    const container = document.getElementById(containerId);
+    container.replaceChildren();
+
+    if (!Array.isArray(themes) || themes.length === 0) {
+      const empty = document.createElement("p");
+      empty.textContent = "No supported themes were identified.";
+      container.append(empty);
+      return;
+    }
+
+    for (const item of themes) {
+      const row = document.createElement("div");
+      row.className = "theme";
+
+      const title = document.createElement("strong");
+      title.textContent = item.theme || "Untitled theme";
+
+      const count = document.createElement("div");
+      count.className = "count";
+      count.textContent =
+        `${Number(item.count) || 0} supporting review(s)`;
+
+      row.append(title, count);
+      container.append(row);
+    }
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    submit.disabled = true;
+    submit.textContent = "Analysing…";
+    status.className = "status";
+    status.textContent = "Looking up the business and analysing available reviews…";
+    results.style.display = "none";
+
+    try {
+      const response = await fetch(`${WORKER}/place-summary`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: document.getElementById("business").value.trim(),
+          city: document.getElementById("city").value.trim(),
+          lang: document.getElementById("language").value
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Request failed (${response.status}).`);
+      }
+
+      document.getElementById("place-name").textContent =
+        data.place?.name || "Business";
+      document.getElementById("place-address").textContent =
+        data.place?.address || "";
+
+      const rating = data.place?.rating;
+      const total = data.place?.total_reviews;
+      document.getElementById("place-rating").textContent =
+        `${rating == null ? "Rating unavailable" : `Google rating: ${rating}/5`}` +
+        `${total == null ? "" : ` · ${total} total ratings/reviews reported by Google`}`;
+
+      document.getElementById("coverage").textContent =
+        `${data.coverage?.reviews_analysed ?? data.review_count ?? 0} written reviews analysed`;
+
+      const result = data.result || {};
+      document.getElementById("sentiment").textContent =
+        result.sentiment || "Unclear";
+      document.getElementById("confidence").textContent =
+        `AI confidence: ${result.confidence || "unknown"}`;
+
+      showThemes("praised", result.praised);
+      showThemes("complaints", result.complaints);
+      showThemes("admin", result.admin_related);
+
+      document.getElementById("quick-win").textContent =
+        result.quick_win || "No recommendation available.";
+
+      results.style.display = "block";
+      status.textContent = "Analysis complete.";
+    } catch (error) {
+      status.className = "status error";
+      status.textContent =
+        error.message ||
+        "Could not connect to the Worker. Check its status and CORS settings.";
+    } finally {
+      submit.disabled = false;
+      submit.textContent = "Analyse available reviews";
+    }
+  });
+</script>
+</body>
+</html>
