@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Website Quick Check for trade businesses</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --text:#f2f3f5; --muted:#a3a8b3; --accent:#5eead4; --warn:#fbbf24; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width: 680px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.7rem; margin: 0 0 8px; }
+  p.lead { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border-radius: 12px; padding: 16px; margin-top: 16px; }
+  label { display:block; font-size:.9rem; color:var(--muted); margin-bottom:6px; }
+  input[type=text], input[type=email] { width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#0f1115; color:var(--text); font-size:1rem; }
+  button { margin-top:12px; padding:12px 18px; border:0; border-radius:8px; background:var(--accent); color:#06231f; font-weight:600; font-size:1rem; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .fix { border-left:3px solid var(--accent); padding-left:12px; margin:14px 0; }
+  .fix h3 { margin:0 0 4px; font-size:1rem; }
+  .fix p { margin:2px 0; color:var(--muted); }
+  .small { font-size:.8rem; color:var(--muted); }
+  .error { color: var(--warn); }
+  .hidden { display:none; }
+  .checks span { display:inline-block; margin:2px 8px 2px 0; font-size:.85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Website Quick Check</h1>
+  <p class="lead">Enter your website address. In under a minute you get the 3 fixes most likely to bring you more customer enquiries. No sign-up needed.</p>
+
+  <div class="card">
+    <label for="url">Your website</label>
+    <input id="url" type="text" placeholder="e.g. mein-malerbetrieb.de" autocomplete="off">
+    <button id="go">Check my website</button>
+    <p id="error" class="error"></p>
+  </div>
+
+  <div id="out" class="card hidden"></div>
+
+  <div id="lead" class="card hidden">
+    <label for="email">Want the full report by email? (optional)</label>
+    <input id="email" type="email" placeholder="you@example.com">
+    <p class="small"><label style="display:inline"><input id="consent" type="checkbox"> I agree that my email is stored for this test. It is deleted automatically after 30 days.</label></p>
+    <button id="send">Send me the report</button>
+    <p id="leadMsg" class="small"></p>
+  </div>
+
+  <p class="small">This is a prototype built for a challenge. It only reads public web pages and does not contact anyone. The AI can make mistakes, so please treat the advice as a starting point.</p>
+</main>
+
+<script>
+  // Put your Worker address here, for example "https://plancraft-check.yourname.workers.dev"
+  const WORKER = "PASTE_YOUR_WORKER_URL_HERE";
+  const TOOL = "website-check";
+  let lastSite = "";
+
+  const $ = (id) => document.getElementById(id);
+
+  function track(event) {
+    fetch(WORKER + "/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: TOOL, event }),
+    }).catch(() => {});
+  }
+
+  function el(tag, text, cls) {
+    const e = document.createElement(tag);
+    if (text !== undefined) e.textContent = text; // textContent keeps AI output from injecting HTML
+    if (cls) e.className = cls;
+    return e;
+  }
+
+  function show(data) {
+    const out = $("out");
+    out.innerHTML = "";
+    const r = data.result;
+    out.appendChild(el("h2", "Your 3 biggest fixes"));
+    out.appendChild(el("p", r.summary || ""));
+    (r.fixes || []).slice(0, 3).forEach((f, i) => {
+      const d = el("div", undefined, "fix");
+      d.appendChild(el("h3", (i + 1) + ". " + (f.title || "")));
+      d.appendChild(el("p", f.why || ""));
+      d.appendChild(el("p", "What to do: " + (f.how || "")));
+      out.appendChild(d);
+    });
+    const s = data.signals;
+    const checks = el("div", undefined, "checks small");
+    const items = [
+      ["Phone link", s.has_tel_link],
+      ["Contact form", s.has_contact_form],
+      ["Mobile tag", s.mobile_viewport_tag],
+      ["WhatsApp link", s.has_whatsapp_link],
+    ];
+    out.appendChild(el("p", "What we could check directly on your page:", "small"));
+    items.forEach(([name, ok]) => checks.appendChild(el("span", (ok ? "Yes: " : "Not found: ") + name)));
+    out.appendChild(checks);
+    out.appendChild(el("p", "AI confidence: " + (r.confidence || "unknown"), "small"));
+    out.classList.remove("hidden");
+    $("lead").classList.remove("hidden");
+  }
+
+  $("go").addEventListener("click", async () => {
+    const url = $("url").value.trim();
+    $("error").textContent = "";
+    if (!url) { $("error").textContent = "Please enter a website address."; return; }
+    $("go").disabled = true;
+    $("go").textContent = "Checking...";
+    track("start");
+    try {
+      const res = await fetch(WORKER + "/website-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, lang: "en" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong.");
+      lastSite = data.url;
+      show(data);
+      track("result");
+    } catch (e) {
+      $("error").textContent = e.message;
+    } finally {
+      $("go").disabled = false;
+      $("go").textContent = "Check my website";
+    }
+  });
+
+  $("send").addEventListener("click", async () => {
+    const email = $("email").value.trim();
+    const msg = $("leadMsg");
+    msg.textContent = "";
+    if (!$("consent").checked) { msg.textContent = "Please tick the consent box first."; return; }
+    try {
+      const res = await fetch(WORKER + "/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, consent: true, tool: TOOL, site: lastSite }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save.");
+      msg.textContent = "Thank you. This is a prototype, so no email is sent. Your address was stored for the test only.";
+      track("email");
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  });
+
+  track("view");
+</script>
+</body>
+</html>
