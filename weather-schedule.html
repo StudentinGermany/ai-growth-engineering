@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather Work Window for outdoor trades</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --text:#f2f3f5; --muted:#a3a8b3; --accent:#5eead4; --warn:#fbbf24; --go:#34d399; --maybe:#fbbf24; --no:#f87171; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.7rem; margin: 0 0 8px; }
+  p.lead { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border-radius: 12px; padding: 16px; margin-top: 16px; }
+  label { display:block; font-size:.9rem; color:var(--muted); margin-bottom:6px; }
+  input[type=text], input[type=email], select, textarea { width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#0f1115; color:var(--text); font-size:1rem; font-family:inherit; margin-bottom:10px; }
+  textarea { min-height: 110px; resize: vertical; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+  button, a.btn { display:inline-block; margin-top:6px; padding:12px 18px; border:0; border-radius:8px; background:var(--accent); color:#06231f; font-weight:600; font-size:1rem; cursor:pointer; text-decoration:none; }
+  button.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); padding:8px 12px; font-size:.9rem; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .days { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+  .day { background:#0f1115; border-radius:10px; padding:10px; border-top:4px solid #555; }
+  .day.go { border-top-color: var(--go); }
+  .day.maybe { border-top-color: var(--maybe); }
+  .day.no { border-top-color: var(--no); }
+  .day strong { display:block; }
+  .tag { font-size:.8rem; font-weight:700; }
+  .go .tag { color: var(--go); } .maybe .tag { color: var(--maybe); } .no .tag { color: var(--no); }
+  .day p { margin:4px 0 0; font-size:.8rem; color:var(--muted); }
+  h3 { margin: 18px 0 6px; font-size: 1rem; }
+  .small { font-size:.8rem; color:var(--muted); }
+  .error { color: var(--warn); }
+  .hidden { display:none; }
+  .note { border-left:3px solid var(--accent); padding-left:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Weather Work Window</h1>
+  <p class="lead">Choose your trade and city. In under a minute you see which days this week are good for outdoor work, and get ready-to-send messages for customers whose appointments may need to move. No sign-up needed.</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label for="trade">Your trade</label>
+        <select id="trade">
+          <option value="painter">Exterior painter</option>
+          <option value="roofer">Roofer</option>
+          <option value="mason">Bricklayer / concrete</option>
+          <option value="gardener">Landscaper / gardener</option>
+        </select>
+      </div>
+      <div>
+        <label for="city">City</label>
+        <input id="city" type="text" placeholder="e.g. Hamburg">
+      </div>
+    </div>
+    <label for="lang">Language of the customer messages</label>
+    <select id="lang">
+      <option value="de">German</option>
+      <option value="en">English</option>
+    </select>
+    <button id="go">Show my work window</button>
+    <p id="error" class="error"></p>
+  </div>
+
+  <div id="out" class="card hidden"></div>
+
+  <div id="lead" class="card hidden">
+    <label for="email">Want this plan for your city every Monday? (optional)</label>
+    <input id="email" type="email" placeholder="you@example.com">
+    <p class="small"><label style="display:inline"><input id="consent" type="checkbox"> I agree that my email is stored for this test. It is deleted automatically after 30 days. This is a prototype, so no email is sent and we only record your interest.</label></p>
+    <button id="send">Count me in</button>
+    <p id="leadMsg" class="small"></p>
+  </div>
+
+  <p class="small">This is a prototype built for a challenge. The day ratings use simple rules of thumb for each trade, which are assumptions and not safety advice. Always check the product data sheet, the current forecast and your safety rules before you decide. The AI can make mistakes, so please read the messages before you send them. Weather data by <a href="https://open-meteo.com/" style="color:var(--accent)">Open-Meteo.com</a> (CC BY 4.0).</p>
+</main>
+
+<script>
+  const WORKER = "https://website-quick-check.trippylugo.workers.dev";
+  const TOOL = "weather-schedule";
+  const $ = (id) => document.getElementById(id);
+  let lastCity = "";
+
+  function track(event) {
+    fetch(WORKER + "/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: TOOL, event }),
+    }).catch(() => {});
+  }
+
+  function el(tag, text, cls) {
+    const e = document.createElement(tag);
+    if (text !== undefined) e.textContent = text; // textContent keeps AI output from injecting HTML
+    if (cls) e.className = cls;
+    return e;
+  }
+
+  function niceDate(iso) {
+    return new Date(iso + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  }
+
+  const LABEL = { go: "Good day to work", maybe: "Check hourly forecast", no: "Not suitable" };
+
+  function messageBox(out, title, text) {
+    if (!text) return;
+    out.appendChild(el("h3", title));
+    const ta = el("textarea");
+    ta.value = text;
+    out.appendChild(ta);
+    const b = el("button", "Copy message", "ghost");
+    b.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(ta.value); } catch { ta.select(); document.execCommand("copy"); }
+      b.textContent = "Copied";
+      track("copy");
+    });
+    out.appendChild(b);
+  }
+
+  function show(data) {
+    const out = $("out");
+    out.innerHTML = "";
+    const place = [data.place.name, data.place.region].filter(Boolean).join(", ");
+    out.appendChild(el("h2", data.trade.label + " in " + place));
+
+    if (data.ai && data.ai.summary) out.appendChild(el("p", data.ai.summary));
+    else if (data.ai_note) out.appendChild(el("p", "The AI summary is not available right now.", "small"));
+
+    const grid = el("div", undefined, "days");
+    data.days.forEach((d) => {
+      const c = el("div", undefined, "day " + d.status);
+      c.appendChild(el("strong", niceDate(d.date)));
+      c.appendChild(el("span", LABEL[d.status], "tag"));
+      c.appendChild(el("p", d.rain_mm + " mm rain, " + d.temp_min_c + " to " + d.temp_max_c + " C, wind up to " + d.wind_max_kmh + " km/h"));
+      if (d.reasons.length) c.appendChild(el("p", "Why: " + d.reasons.join("; ")));
+      grid.appendChild(c);
+    });
+    out.appendChild(grid);
+
+    const r = data.trade.rules;
+    out.appendChild(el("p", "Rules of thumb used (assumptions): at most " + r.maxRain + " mm rain, at least " + r.minTemp + " C at night, wind up to " + r.maxWind + " km/h.", "small"));
+
+    if (data.ai) {
+      if (data.ai.tip) { out.appendChild(el("h3", "Tip for this week")); out.appendChild(el("p", data.ai.tip)); }
+      messageBox(out, "Message to move an appointment (" + (data.plan.from ? niceDate(data.plan.from) : "") + (data.plan.to ? " to " + niceDate(data.plan.to) : "") + ")", data.ai.message_reschedule);
+      messageBox(out, "Heads-up message for " + (data.plan.heads_up ? niceDate(data.plan.heads_up) : "a possible rain day"), data.ai.message_heads_up);
+      if (!data.ai.message_reschedule && !data.ai.message_heads_up) {
+        out.appendChild(el("p", "No appointment needs to move this week, so no customer message is needed.", "small"));
+      }
+    }
+
+    out.appendChild(el("p", "Moving jobs and telling customers is office work that takes time every week. plancraft is software built to take that admin load off tradespeople.", "note"));
+    const a = el("a", "See how plancraft helps", "btn");
+    a.href = "https://plancraft.com/en-gb";
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.addEventListener("click", () => track("cta"));
+    out.appendChild(a);
+
+    out.classList.remove("hidden");
+    $("lead").classList.remove("hidden");
+  }
+
+  $("go").addEventListener("click", async () => {
+    const city = $("city").value.trim();
+    $("error").textContent = "";
+    if (city.length < 2) { $("error").textContent = "Please enter a city."; return; }
+    lastCity = city;
+    $("go").disabled = true;
+    $("go").textContent = "Checking the forecast...";
+    track("start");
+    try {
+      const res = await fetch(WORKER + "/weather-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trade: $("trade").value, city, lang: $("lang").value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong.");
+      show(data);
+      track("result");
+    } catch (e) {
+      $("error").textContent = e.message;
+    } finally {
+      $("go").disabled = false;
+      $("go").textContent = "Show my work window";
+    }
+  });
+
+  $("send").addEventListener("click", async () => {
+    const email = $("email").value.trim();
+    const msg = $("leadMsg");
+    msg.textContent = "";
+    if (!$("consent").checked) { msg.textContent = "Please tick the consent box first."; return; }
+    try {
+      const res = await fetch(WORKER + "/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, consent: true, tool: TOOL, site: $("trade").value + " / " + lastCity }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save.");
+      msg.textContent = "Thank you. Your interest was recorded for the test.";
+      track("email");
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  });
+
+  track("view");
+</script>
+</body>
+</html>
