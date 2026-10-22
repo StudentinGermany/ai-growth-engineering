@@ -188,9 +188,16 @@ async function websiteCheck(request, env, body) {
       max_tokens: 700,
     });
     parsed = parseJson(out.response);
-  } catch {
-    return json({ error: "The AI step failed. Please try again." }, 502);
-  }
+  // } catch {
+  //   return json({ error: "The AI step failed. Please try again." }, 502);
+  // }
+} catch (err) {
+  console.error("Workers AI error:", err);
+  return json({
+    error: "The AI step failed.",
+    details: err instanceof Error ? err.message : String(err),
+  }, 502);
+}
   if (!parsed || !Array.isArray(parsed.fixes)) {
     return json({ error: "The AI answer could not be read. Please try again." }, 502);
   }
