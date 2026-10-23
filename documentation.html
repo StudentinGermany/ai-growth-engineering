@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Growth Engineering: Experiment Documentation</title>
+<style>
+  :root { --text:#1b1f24; --muted:#586069; --line:#d8dee4; --accent:#0f766e; --bg:#ffffff; --soft:#f4f7f8; --fill:#fff3bf; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); line-height:1.55; }
+  main { max-width: 820px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.8rem; margin: 0 0 4px; }
+  h2 { font-size: 1.3rem; margin: 36px 0 8px; border-bottom: 2px solid var(--line); padding-bottom: 4px; }
+  p { margin: 8px 0; }
+  ul { padding-left: 22px; }
+  li { margin: 4px 0; }
+  strong { color: #0b4f49; }
+  table { width:100%; border-collapse: collapse; font-size: .92rem; margin: 12px 0; }
+  th, td { text-align:left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; word-break: break-word; }
+  th { background: var(--soft); }
+  hr { border:0; border-top:1px solid var(--line); margin: 28px 0 0; }
+  a { color: var(--accent); }
+  .fill { background: var(--fill); padding: 1px 4px; border-radius: 3px; }
+  @media print { .fill { background: none; } a { color: inherit; } }
+</style>
+</head>
+<body>
+<main>
+<h1>AI Growth Engineering: Experiment Documentation</h1>
+<p>Eunseong Yun | October 2026 | Written in English</p>
+<h2>Which one I would ship first, and why</h2>
+<p>I would ship the Voice Job Note first. It is the closest to what plancraft sells, which is getting quotes and office work done faster, so the craftsmen it attracts are more likely to be the right ones. It also has a built-in demand test: after the free 20-second result, a visitor can join a waitlist for a longer premium version, and that click is the clearest buying-interest signal of the three tools. The Weather Work Window comes second. It has the least friction and brings people back every week, but its leads are only a trade and a city. The Website Quick Check comes last, because it overlaps with plancraft's own X-Ray. One condition: the voice note needs a quality check on about 8 real German recordings first, and if most visitors refuse the microphone I would ship the Weather Work Window first instead.</p>
+<h2>What I built</h2>
+<p>Three live tools and one idea that I scoped and stopped.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Experiment</th>
+<th>Live link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Website Quick Check</td>
+<td>https://studentingermany.github.io/ai-growth-engineering/website-check.html</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Weather Work Window</td>
+<td>https://studentingermany.github.io/ai-growth-engineering/weather-schedule.html</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Voice Job Note</td>
+<td>https://studentingermany.github.io/ai-growth-engineering/voice-note.html</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Google review summary</td>
+<td>Not built, see the last section</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Tools:</strong> I used Claude to write and review the code. The backend is one Cloudflare Worker with Workers AI (Whisper for speech to text, Llama 3.1 8B for the text steps). The pages run on GitHub Pages, and weather data comes from Open-Meteo.</li>
+<li><strong>Honest limits:</strong> I had no real traffic. I checked accuracy with my own test runs, and the success numbers are targets I set before testing. The funnel counters include my own test runs, so they show that tracking works and say nothing about real conversion.</li>
+<li><strong>Time:</strong> <span class="fill">[FILL IN the real total, for example: "about 4 hours: 2.5 building, 1 testing, 0.5 writing". If you went over, say so and say where the extra time went.]</span></li>
+</ul>
+<hr />
+<h2>Experiment 1: Website Quick Check</h2>
+<p>Live link: <a href="https://studentingermany.github.io/ai-growth-engineering/website-check.html">https://studentingermany.github.io/ai-growth-engineering/website-check.html</a></p>
+<p>A visitor enters the address of a trade business website. Code reads the public page and checks facts directly (phone link, contact form, mobile tag, WhatsApp link). The AI then turns those facts into three fixes that could bring more enquiries. I built it as the simplest of the three, a test of the AI step. plancraft's X-Ray already analyses a business's online presence, so I do not claim this is a new idea.</p>
+<p><strong>1. Hypothesis</strong>
+Many craftsmen depend on their website for new customers but do not know why visitors do not contact them. If they get three concrete fixes for their own site in under a minute, at least some of them will leave an email for the full report.</p>
+<p><strong>2. Funnel stage and metric</strong>
+Visitor to lead. Primary metric: share of people who see a result and then leave an email. Secondary metrics: share of people who start a check and get a result, and clicks on the plancraft link.</p>
+<p><strong>3. How I would test it</strong>
+First check the quality: run the tool on 10 public websites of small trade businesses and compare each of the three fixes with the page by hand. Then share it with a small group of craftsmen through trade communities, aiming for at least 100 visitors (my assumption, too few for statistics, so it shows direction only). Pass: at least 80% of the fixes are true, and the email target is met. Clean kill: fewer than 60% of the fixes are true, or fewer than 3% of results lead to an email.</p>
+<p><strong>4. My thinking</strong>
+I kept it small: one page, one check, three fixes. Code extracts the facts first, so the AI cannot invent them. I cut crawling more than one page and real email delivery. What I am unsure about: whether craftsmen see their website as urgent, whether these visitors overlap with plancraft's ideal customers, and how well a small open model works on German websites. Next I would add a German version and a clearer link from the findings to plancraft's quote and invoice features.</p>
+<p><strong>5. Success</strong>
+10% of people who see a result leave an email. This is a guess that I set before testing.</p>
+<p><strong>Outcome:</strong> I ran the tool on <span class="fill">[N]</span> websites. <span class="fill">[X]</span> of <span class="fill">[N x 3]</span> fixes were true when I checked them against the page (<span class="fill">[Y]</span>%). The most common mistake was <span class="fill">[for example: it said there was no contact form when the form was loaded by a script]</span>. I had no real visitors, so the funnel counts (<span class="fill">[views]</span>, <span class="fill">[results]</span>, <span class="fill">[emails]</span>) are my own test runs and show only that tracking works. Result against my targets: <span class="fill">[pass / partly / not reached]</span>. What I would change first: <span class="fill">[one specific thing]</span>.</p>
+<hr />
+<h2>Experiment 2: Weather Work Window</h2>
+<p>Live link: <a href="https://studentingermany.github.io/ai-growth-engineering/weather-schedule.html">https://studentingermany.github.io/ai-growth-engineering/weather-schedule.html</a></p>
+<p>A visitor picks a trade and a city. The tool fetches the 7-day forecast, code rates each day for that trade, and the AI writes a short plan plus ready-to-send messages for customers whose appointments may need to move.</p>
+<p><strong>1. Hypothesis</strong>
+Outdoor trades such as roofers and painters reschedule work around the weather all the time, and writing to customers about it takes time. A rated week with ready-to-send messages will get copied and used more often than a plain forecast, because it saves the writing as well as the looking.</p>
+<p><strong>2. Funnel stage and metric</strong>
+Visitor to lead. Primary metric: share of results where a customer message is copied. Secondary metrics: share of results where an email is left, and clicks on the plancraft link.</p>
+<p><strong>3. How I would test it</strong>
+First run 8 combinations of trade and city, compare the forecast values with a weather site, and read every message for errors. Then post it in trade communities and aim for at least 100 visitors, again only enough to see a direction. Pass: at least 80% of messages are usable without edits and the copy rate reaches the target. Clean kill: fewer than 50% of messages are usable, or the copy rate is under half of the target.</p>
+<p><strong>4. My thinking</strong>
+Code decides the ratings and the AI only writes the text, so it cannot invent weather. The limits per trade (for example, at most 1 mm of rain for exterior painting) are my own assumptions and not safety advice. I rate whole days, not hours, which is a simplification. Open-Meteo is free for non-commercial use, which is fine for a challenge, but plancraft would need a paid plan or another source. What I am unsure about: whether craftsmen want this, and whether it leads to plancraft demand, since the link (rescheduling is office work) is indirect. I also have not had the German messages reviewed by a native speaker. Next I would add hourly windows and a link to scheduling.</p>
+<p><strong>5. Success</strong>
+20% of results lead to a copied message, and 5% of visitors leave an email. Both are guesses set before testing.</p>
+<p><strong>Outcome:</strong> I ran <span class="fill">[N]</span> combinations of trade and city and compared the forecast with a weather site: <span class="fill">[matched in X of N / small differences in rain amounts]</span>. I read <span class="fill">[N]</span> customer messages and <span class="fill">[X]</span> were usable without edits (<span class="fill">[Y]</span>%). The most common problem was <span class="fill">[for example: German wording that sounded stiff]</span>. As above, the funnel counts are my own test runs. Result against my targets: <span class="fill">[pass / partly / not reached]</span>. What I would change first: <span class="fill">[one specific thing]</span>.</p>
+<hr />
+<h2>Experiment 3: Voice Job Note</h2>
+<p>Live link: <a href="https://studentingermany.github.io/ai-growth-engineering/voice-note.html">https://studentingermany.github.io/ai-growth-engineering/voice-note.html</a></p>
+<p>A visitor records up to 20 seconds about a job. It can be a clean sentence ("bathroom, 8 m² tiles, remove the old ones, new shower tray") or a casual chat. Speech to text turns it into a transcript, and the AI makes a structured summary: trade, job type, scope, measurements heard, what is missing for a quote, and questions to ask the customer. Anything that was not said stays "unknown", and the AI is told never to guess a number. Only when the job type has a rule and the area was found does the code show a rough estimate range for materials and hours. The rules and every assumption are shown next to the result, and the visitor can edit them. If the area is missing, no numbers appear. The free version is limited to 20 seconds. A premium version (longer notes, several jobs in one recording, saved history, PDF quote draft) is described on the page but not built. Its button leads to a waitlist.</p>
+<p><strong>1. Hypothesis</strong>
+Tradespeople on a job site find speaking easier than typing. If a 20-second voice note gives them a useful summary and a list of what is missing, some of them will want a longer version, which shows demand for the quote work that plancraft's software takes over.</p>
+<p><strong>2. Funnel stage and metric</strong>
+Visitor to lead. The funnel is visit, try, leave an email, with "try" split into steps so I can see where people drop out: page viewed, Record clicked, microphone allowed, result shown, result copied, premium waitlist clicked, email left. Primary metric: share of people who see a result and then click the premium waitlist. Secondary metrics: share of Record clicks that reach a result, and emails divided by page views.</p>
+<p><strong>3. How I would test it</strong>
+First check the quality: record 8 test notes (clean and casual, German and English, quiet and noisy). Compare each transcript and the extracted fields with what I said, and check the estimate maths by hand on 3 of them. Then share the page with at least 50 real visitors. That is too few for statistics, so it only shows a direction. Pass: no invented numbers (the code only shows a number that appears in the transcript), at least 7 of the 8 notes give a correct summary and area, at least 60% of Record clicks reach a result, and at least 10% of results lead to a premium click. Clean kill: fewer than 50% of the notes are usable, or fewer than half of the Record clicks get the microphone allowed (then a voice page is the wrong format for this audience), or fewer than 3% of results lead to a premium click after 50 visits.</p>
+<p><strong>4. My thinking</strong>
+The AI only extracts and summarises, and the code does the maths, so the model cannot invent a number. The rules table (for example, tile area times 1.10 to 1.15 for cutting waste) holds my own typical ranges for three job types, and results are ranges, not single figures. A real product would use plancraft's own prices and times. The 20-second limit is checked by the server and keeps the free cost low. It also gives a natural reason to offer more. Audio is processed and not stored. I cut several jobs per note, saved history, PDF export and real email delivery. What I am unsure about: how well the speech model understands German trade words and noisy sites, whether tradespeople would speak into a web page when they already send voice messages on WhatsApp, and whether plancraft already has something close to this, which I cannot see from outside. Next I would run a larger set of real notes (at least 30), try a WhatsApp voice-note entry, and replace my rules table with real price and time data.</p>
+<p><strong>5. Success</strong>
+60% of people who click Record get a result, and 10% of people who see a result click the premium waitlist. Both are guesses set before testing.</p>
+<p><strong>Outcome:</strong> I recorded <span class="fill">[N]</span> notes (<span class="fill">[n]</span> German, <span class="fill">[n]</span> English, <span class="fill">[n]</span> with background noise). The transcript was correct in <span class="fill">[X]</span> of N, and the summary and area were correct in <span class="fill">[Y]</span> of N. The tool showed <span class="fill">[0 / N]</span> wrong numbers, and it refused to show an estimate when the area was missing in <span class="fill">[Z]</span> cases. The worst problem was <span class="fill">[for example: a trade word that was misheard]</span>. Funnel counts are my own test runs. Result against my targets: <span class="fill">[pass / partly / not reached]</span>. What I would change first: <span class="fill">[one specific thing]</span>.</p>
+<hr />
+<h2>Experiment 4: Google review summary (scoped and stopped, not built)</h2>
+<p><strong>Status:</strong> Not built and not tested. This is a documented stop and not a measured kill, because I never ran a test.</p>
+<p><strong>The idea (my own):</strong> A visitor enters a business name and the AI summarises what customers praise and complain about. The offer has two plans:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Free</th>
+<th>Premium</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reviews covered</td>
+<td>the latest 10 to 20 reviews</td>
+<td>the entire review history</td>
+</tr>
+<tr>
+<td>Date range</td>
+<td>none</td>
+<td>the user picks a period, for example the last 3 months</td>
+</tr>
+<tr>
+<td>What the user gets</td>
+<td>a summary of strengths and complaints</td>
+<td>a summary per period, so a business can see whether things improve</td>
+</tr>
+</tbody>
+</table>
+<p>The limit on the free plan has a second purpose. Google charges for review data beyond about 1,000 requests a month, so a small free tier keeps the cost per visitor low and makes the paid plan the place where deeper analysis lives. My hypothesis for the paid plan is that a craftsman who sees a useful summary of 10 reviews will want to know what the rest say.</p>
+<p><strong>1. Hypothesis</strong>
+Craftsmen want to understand what customers say without reading hundreds of Google reviews by hand. A free summary of the latest reviews will attract them, and a share of them will want the full history, which would make a paid plan possible.</p>
+<p><strong>2. Funnel stage and metric</strong>
+Visitor to lead. Primary metric: share of landing-page visitors who leave an email to try the tool.</p>
+<p><strong>3. How I would test it</strong>
+With a funded setup: a Google Cloud project with a budget alert and a hard quota cap, a free tier that shows what Google returns (up to 5 reviews), and a premium waitlist to see whether anyone wants the full history and date ranges before paying for the data.</p>
+<p><strong>4. Why I stopped</strong></p>
+<ul>
+<li><strong>Payment account.</strong> The Places API needs a Google Cloud project with billing enabled, which means attaching a payment method. Review data is billed at the highest price tier, about $25 to $40 per 1,000 requests above a free monthly cap of about 1,000 (as I read Google's pricing pages in October 2026). A public tool with no spending guard could cost real money, and a premium summary of a whole history would multiply the cost for each visitor.</li>
+<li><strong>The data does not fit the two tiers.</strong> According to Google's documentation, the Places API (New) returns at most 5 reviews per place, sorted by relevance, with no date filter. "The latest 10" and "all reviews" are therefore not possible with this source. A full history would need the owner's sign-in through the Business Profile API (I could not verify the approval conditions) or third-party scraping, which raises terms-of-service questions.</li>
+<li><strong>Without live data it is a chatbot.</strong> The only free route is to let the visitor paste in reviews, and a free chatbot does that too, so the AI would not be what makes the tool work.</li>
+</ul>
+<p><strong>5. Success</strong>
+5% of landing-page visitors leave an email (a guess). I kept the free and premium pattern in Experiment 3, where the premium tier is only described and the waitlist measures demand.</p>
+<hr />
+<h2>How I would measure all of them</h2>
+<p>I would set a baseline for each tool before changing anything:</p>
+<ul>
+<li><strong>Visitors:</strong> how many people open the page, and how many of them are craftsmen.</li>
+<li><strong>Use:</strong> how many start, and how many reach a result.</li>
+<li><strong>Leads:</strong> how many leave an email or click the plancraft link.</li>
+<li><strong>Cost:</strong> cost per lead, if I pay for traffic.</li>
+<li><strong>Business impact:</strong> whether any of these leads book a demo.</li>
+</ul>
+<p>I would not scale a tool because of engagement alone. A tool earns its place only if the visitors it attracts are the kind of craftsmen plancraft wants.</p>
+</main>
+</body>
+</html>
