@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Job Note for trade businesses</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --text:#f2f3f5; --muted:#a3a8b3; --accent:#5eead4; --warn:#fbbf24; --rec:#f87171; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width: 700px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.7rem; margin: 0 0 8px; }
+  h2 { font-size: 1.15rem; margin: 0 0 8px; }
+  h3 { font-size: 1rem; margin: 16px 0 6px; }
+  p.lead { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border-radius: 12px; padding: 16px; margin-top: 16px; }
+  label { display:block; font-size:.9rem; color:var(--muted); margin-bottom:6px; }
+  input[type=text], input[type=email], input[type=number], select, textarea { width:100%; padding:10px; border-radius:8px; border:1px solid #333; background:#0f1115; color:var(--text); font-size:1rem; font-family:inherit; }
+  textarea { min-height: 84px; resize: vertical; }
+  button { margin-top:12px; padding:12px 18px; border:0; border-radius:8px; background:var(--accent); color:#06231f; font-weight:600; font-size:1rem; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--text); border:1px solid #3a3f4b; font-weight:500; padding:8px 12px; font-size:.9rem; margin-right:6px; }
+  button:disabled { opacity:.5; cursor:wait; }
+  button.recording { background:var(--rec); color:#2a0707; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .row > div { flex:1 1 160px; }
+  .bar { height:8px; background:#0f1115; border-radius:4px; overflow:hidden; margin-top:12px; }
+  .bar > div { height:100%; width:0; background:var(--accent); }
+  .small { font-size:.8rem; color:var(--muted); }
+  .error { color: var(--warn); min-height:1.2em; }
+  .hidden { display:none; }
+  .note { border-left:3px solid var(--accent); padding-left:12px; color:var(--muted); }
+  .tag { display:inline-block; padding:2px 8px; border-radius:999px; background:#0f1115; border:1px solid #333; font-size:.8rem; margin:2px 6px 2px 0; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  table { border-collapse: collapse; width:100%; font-size:.9rem; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid #2a2e38; vertical-align:middle; }
+  th { color:var(--muted); font-weight:500; }
+  td input[type=number] { width:90px; padding:6px; }
+  .scroll { overflow-x:auto; }
+  .big { font-size:1.05rem; }
+  a.btn { display:inline-block; margin-top:12px; padding:10px 16px; border-radius:8px; background:var(--accent); color:#06231f; font-weight:600; text-decoration:none; }
+  details { margin-top:12px; }
+  summary { cursor:pointer; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Voice Job Note</h1>
+  <p class="lead">Tap record and talk for up to 20 seconds about a job, the way you would tell a colleague. You get a clean summary, what is still missing, and questions to ask the customer. No sign-up needed.</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label for="lang">Language of your note</label>
+        <select id="lang">
+          <option value="de">Deutsch</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div style="flex:2 1 220px">
+        <button id="rec" style="margin-top:0;width:100%">Record (max 20 seconds)</button>
+      </div>
+    </div>
+    <div class="bar"><div id="progress"></div></div>
+    <p id="status" class="small" aria-live="polite">Your recording is sent to an AI service to be turned into text. It is not stored.</p>
+    <p id="error" class="error" aria-live="polite"></p>
+    <p class="small" style="margin-bottom:4px">No microphone at hand? Try an example instead:</p>
+    <button class="ghost" id="ex1" style="margin-top:0">Example: short and clear</button>
+    <button class="ghost" id="ex2" style="margin-top:0">Example: casual chat</button>
+  </div>
+
+  <div id="out" class="card hidden"></div>
+  <div id="est" class="card hidden"></div>
+
+  <div id="premium" class="card hidden">
+    <h2>Premium (idea, not available yet)</h2>
+    <p>The free version takes notes up to 20 seconds. A premium version could offer:</p>
+    <ul>
+      <li>Notes up to 3 minutes, for a whole site visit</li>
+      <li>Several jobs in one recording</li>
+      <li>A saved history of your notes</li>
+      <li>A quote draft you can export as a PDF</li>
+    </ul>
+    <p class="small">This button only records your interest. Nothing can be bought yet.</p>
+    <button id="joinBtn">Join the waitlist</button>
+    <div id="leadForm" class="hidden">
+      <label for="email" style="margin-top:12px">Your email</label>
+      <input id="email" type="email" placeholder="you@example.com">
+      <p class="small"><label style="display:inline"><input id="consent" type="checkbox"> I agree that my email is stored for this test. It is deleted automatically after 30 days.</label></p>
+      <button id="send">Put me on the waitlist</button>
+    </div>
+    <p id="leadMsg" class="small" aria-live="polite"></p>
+  </div>
+
+  <p class="small">This is a prototype built for a challenge. The AI can mistake words or miss details, so please check the text it heard. Estimates are rough ranges and not a quote.</p>
+</main>
+
+<script>
+  // Address of the Cloudflare Worker (the same one as the other experiments)
+  const WORKER = "https://website-quick-check.trippylugo.workers.dev";
+  const TOOL = "voice-note";
+  const MAX = 20; // seconds. The Worker measures the length again, so this cannot be bypassed.
+  const RATE = 16000;
+
+  const $ = (id) => document.getElementById(id);
+  const state = { data: null, fromAudio: false };
+
+  function track(event) {
+    fetch(WORKER + "/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: TOOL, event }),
+    }).catch(() => {});
+  }
+
+  function el(tag, text, cls) {
+    const e = document.createElement(tag);
+    if (text !== undefined) e.textContent = text; // textContent keeps AI output from injecting HTML
+    if (cls) e.className = cls;
+    return e;
+  }
+
+  function setError(msg) { $("error").textContent = msg || ""; }
+  function setStatus(msg) { $("status").textContent = msg; }
+
+  // ---------- recording ----------
+  let recorder = null, chunks = [], stream = null, timer = null, startedAt = 0, busy = false;
+
+  function setBusy(on, label) {
+    busy = on;
+    $("rec").disabled = on;
+    $("ex1").disabled = on;
+    $("ex2").disabled = on;
+    if (label) setStatus(label);
+  }
+
+  async function startRecording() {
+    setError("");
+    track("start");
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      setError("This browser cannot record audio. Please try one of the examples below, or open the page in a current Chrome, Edge, Firefox or Safari.");
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setError("The microphone is blocked. Allow it in your browser, or try one of the examples.");
+      return;
+    }
+    track("mic");
+    chunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    recorder.onstop = onRecorded;
+    recorder.start();
+    startedAt = Date.now();
+    $("rec").textContent = "Stop";
+    $("rec").classList.add("recording");
+    setStatus("Recording... speak now. It stops by itself after " + MAX + " seconds.");
+    timer = setInterval(() => {
+      const s = (Date.now() - startedAt) / 1000;
+      $("progress").style.width = Math.min(100, (s / MAX) * 100) + "%";
+      if (s >= MAX) stopRecording();
+    }, 100);
+  }
+
+  function stopRecording() {
+    if (recorder && recorder.state === "recording") recorder.stop();
+  }
+
+  // ---------- audio -> 16 kHz mono WAV (a format every browser can produce and the Worker can check) ----------
+  async function toMono16k(blob) {
+    const arr = await blob.arrayBuffer();
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    let decoded;
+    try {
+      decoded = await ctx.decodeAudioData(arr);
+    } finally {
+      ctx.close();
+    }
+    const frames = Math.max(1, Math.ceil(decoded.duration * RATE));
+    const off = new OfflineAudioContext(1, frames, RATE);
+    const src = off.createBufferSource();
+    src.buffer = decoded;
+    src.connect(off.destination);
+    src.start();
+    const rendered = await off.startRendering();
+    return rendered.getChannelData(0).slice(0, RATE * MAX);
+  }
+
+  function encodeWav(samples) {
+    const buf = new ArrayBuffer(44 + samples.length * 2);
+    const v = new DataView(buf);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); w(8, "WAVE");
+    w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, RATE, true); v.setUint32(28, RATE * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    w(36, "data"); v.setUint32(40, samples.length * 2, true);
+    for (let i = 0; i < samples.length; i++) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    }
+    return new Uint8Array(buf);
+  }
+
+  function toBase64(bytes) {
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+
+  function loudEnough(samples) {
+    let sum = 0;
+    for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
+    return Math.sqrt(sum / Math.max(1, samples.length)) > 0.003;
+  }
+
+  async function onRecorded() {
+    clearInterval(timer);
+    $("progress").style.width = "0";
+    $("rec").textContent = "Record (max 20 seconds)";
+    $("rec").classList.remove("recording");
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    const seconds = (Date.now() - startedAt) / 1000;
+    if (seconds < 1) { setStatus(""); setError("That was too short. Please record at least a second or two."); return; }
+    setBusy(true, "Turning your voice into text...");
+    try {
+      const samples = await toMono16k(new Blob(chunks, { type: (recorder && recorder.mimeType) || "audio/webm" }));
+      if (!loudEnough(samples)) throw new Error("We could not hear anything. Please check the microphone and try again.");
+      const audio = toBase64(encodeWav(samples));
+      await analyse({ audio }, true);
+    } catch (e) {
+      setStatus("");
+      setError(e.message || "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ---------- talking to the Worker ----------
+  async function analyse(payload, fromAudio) {
+    setStatus(fromAudio ? "Turning your voice into text and reading it..." : "Reading the text...");
+    const res = await fetch(WORKER + "/voice-note", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, lang: $("lang").value }),
+    });
+    let data;
+    try { data = await res.json(); } catch { throw new Error("The server answer could not be read."); }
+    if (!res.ok) throw new Error(data.error || "Something went wrong.");
+    state.data = data;
+    state.fromAudio = fromAudio;
+    renderAll(data);
+    setStatus("Done. Check the text we heard, and fix it if a word is wrong.");
+    if (fromAudio && payload.audio) track("result");
+  }
+
+  // ---------- result: layer 1 ----------
+  function field(parent, label, text) {
+    const d = el("div");
+    d.appendChild(el("h3", label));
+    d.appendChild(el("p", text || "unknown"));
+    parent.appendChild(d);
+  }
+
+  function listBlock(parent, title, items, emptyText) {
+    parent.appendChild(el("h3", title));
+    if (!items.length) { parent.appendChild(el("p", emptyText, "small")); return; }
+    const ul = el("ul");
+    items.forEach((i) => ul.appendChild(el("li", i)));
+    parent.appendChild(ul);
+  }
+
+  const TRADE_NAMES = { painter: "Painter", tiler: "Tiler", "floor layer": "Floor layer", roofer: "Roofer", electrician: "Electrician", plumber: "Plumber", carpenter: "Carpenter", other: "Other trade", unknown: "Trade unknown" };
+
+  function renderAll(data) {
+    renderLayer1(data);
+    renderEstimate(data.layer2);
+    $("premium").classList.remove("hidden");
+  }
+
+  function renderLayer1(data) {
+    const out = $("out");
+    const l1 = data.layer1;
+    out.innerHTML = "";
+    out.appendChild(el("h2", "Step 1: What was said (AI summary)"));
+
+    out.appendChild(el("h3", "What we heard"));
+    const ta = el("textarea");
+    ta.id = "transcript";
+    ta.value = data.transcript;
+    out.appendChild(ta);
+    const again = el("button", "Analyse the corrected text", "ghost");
+    again.style.marginTop = "6px";
+    again.addEventListener("click", async () => {
+      const t = ta.value.trim();
+      if (t.length < 8) { setError("The text is too short."); return; }
+      setError("");
+      setBusy(true);
+      try { await analyse({ transcript: t }, false); } catch (e) { setStatus(""); setError(e.message); } finally { setBusy(false); }
+    });
+    out.appendChild(again);
+    if (data.seconds) out.appendChild(el("p", "Recording length: " + data.seconds + " seconds (free limit " + data.max_seconds + ").", "small"));
+
+    out.appendChild(el("h3", "Summary"));
+    out.appendChild(el("p", l1.summary || "No summary."));
+    const tags = el("div");
+    tags.appendChild(el("span", TRADE_NAMES[l1.trade] || l1.trade, "tag"));
+    tags.appendChild(el("span", "Job: " + String(l1.job_type).replace("_", " "), "tag"));
+    tags.appendChild(el("span", "AI confidence: " + l1.confidence, "tag"));
+    out.appendChild(tags);
+    field(out, "Work to be done", l1.scope);
+    if (l1.key_points.length) listBlock(out, "Other points from the note", l1.key_points, "");
+    listBlock(out, "Measurements heard", l1.measurements_heard, "No measurements were said.");
+    listBlock(out, "What is still missing for a quote", l1.missing, "Nothing obvious is missing.");
+    if (l1.questions_for_customer.length) listBlock(out, "Questions to ask the customer", l1.questions_for_customer, "");
+
+    const copy = el("button", "Copy this summary");
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(summaryText());
+        copy.textContent = "Copied";
+        track("copy");
+      } catch { copy.textContent = "Copy failed. Select the text and copy it by hand."; }
+    });
+    out.appendChild(copy);
+    out.classList.remove("hidden");
+  }
+
+  function summaryText() {
+    const l1 = state.data.layer1;
+    const lines = [];
+    lines.push("Job note: " + (l1.summary || ""));
+    lines.push("Trade: " + l1.trade + " | Job: " + l1.job_type);
+    lines.push("Work: " + l1.scope);
+    if (l1.measurements_heard.length) lines.push("Measurements: " + l1.measurements_heard.join("; "));
+    if (l1.missing.length) lines.push("Missing: " + l1.missing.join("; "));
+    if (l1.questions_for_customer.length) lines.push("Ask the customer: " + l1.questions_for_customer.join(" / "));
+    const e = lastEstimate;
+    if (e) lines.push("Rough estimate (assumptions, not a quote): " + e);
+    return lines.join("\n");
+  }
+
+  // ---------- result: layer 2 (code, not AI) ----------
+  let ass = null, lastEstimate = "";
+
+  function fmt(n) {
+    const r = Math.round(n * 10) / 10;
+    return String(r);
+  }
+  function range(lo, hi, unit) {
+    const a = Math.min(lo, hi), b = Math.max(lo, hi);
+    return fmt(a) + " to " + fmt(b) + " " + unit;
+  }
+
+  // Quantity = area x per_m2 (x coats if per_coat). Hours = area (x coats) / speed. Low hours use the fast speed.
+  function compute(a, area, coats, removeOld) {
+    const f = a.coats ? coats : 1;
+    const rows = a.materials.map((m) => {
+      const k = m.per_coat ? area * f : area;
+      return { name: m.name, unit: m.unit, lo: k * m.per_m2[0], hi: k * m.per_m2[1] };
+    });
+    const slow = Math.min(a.speed_m2_per_h[0], a.speed_m2_per_h[1]);
+    const fast = Math.max(a.speed_m2_per_h[0], a.speed_m2_per_h[1]);
+    if (!(slow > 0)) return null;
+    const work = { lo: (area * f) / fast, hi: (area * f) / slow };
+    const rm = removeOld ? { lo: area * a.remove_h_per_m2[0], hi: area * a.remove_h_per_m2[1] } : null;
+    return { rows, work, rm, total: { lo: work.lo + (rm ? Math.min(rm.lo, rm.hi) : 0), hi: work.hi + (rm ? Math.max(rm.lo, rm.hi) : 0) } };
+  }
+
+  function numInput(value, onChange, step) {
+    const i = el("input");
+    i.type = "number";
+    i.step = step || "any";
+    i.min = "0";
+    i.value = value;
+    i.addEventListener("input", () => onChange(parseFloat(i.value)));
+    return i;
+  }
+
+  function renderEstimate(l2) {
+    const box = $("est");
+    box.innerHTML = "";
+    lastEstimate = "";
+    box.appendChild(el("h2", "Step 2: Rough estimate (calculated by code, not by the AI)"));
+
+    if (!l2.rules) {
+      box.appendChild(el("p", "No numbers shown. This note is not one of the job types that have a rule yet (tiling, interior painting, flooring)."));
+      box.appendChild(el("p", "Need: " + l2.need.join("; "), "small"));
+      box.classList.remove("hidden");
+      return;
+    }
+
+    ass = JSON.parse(JSON.stringify(l2.rules));
+    let removeOld = !!l2.remove_old;
+    let coats = ass.coats || 1;
+    const areaIn = numInput(l2.area_m2 === null || l2.area_m2 === undefined ? "" : l2.area_m2, () => recalc());
+    areaIn.id = "areaIn";
+
+    box.appendChild(el("p", "Job type: " + ass.label, "small"));
+    const top = el("div", undefined, "row");
+    const c1 = el("div");
+    const l = el("label", "Area in m²");
+    l.htmlFor = "areaIn";
+    c1.appendChild(l);
+    c1.appendChild(areaIn);
+    c1.appendChild(el("p", l2.area_m2 ? "From your note: " + l2.area_source + "." : "Need: " + l2.need.join("; ") + ". You can type it in yourself.", "small"));
+    top.appendChild(c1);
+    if (ass.coats) {
+      const c2 = el("div");
+      c2.appendChild(el("label", "Coats of paint"));
+      c2.appendChild(numInput(coats, (v) => { coats = v; recalc(); }, "1"));
+      top.appendChild(c2);
+    }
+    box.appendChild(top);
+
+    const rmLabel = el("label");
+    rmLabel.style.marginTop = "10px";
+    const cb = el("input");
+    cb.type = "checkbox";
+    cb.checked = removeOld;
+    cb.addEventListener("change", () => { removeOld = cb.checked; recalc(); });
+    rmLabel.appendChild(cb);
+    rmLabel.appendChild(document.createTextNode(" " + ass.remove_label + " first"));
+    box.appendChild(rmLabel);
+
+    const result = el("div");
+    result.id = "estOut";
+    box.appendChild(result);
+
+    const det = el("details");
+    det.open = true;
+    det.appendChild(el("summary", "Assumptions used (you can change them)"));
+    const wrap = el("div", undefined, "scroll");
+    const t = el("table");
+    const head = el("tr");
+    ["Assumption", "Low", "High"].forEach((h) => head.appendChild(el("th", h)));
+    t.appendChild(head);
+    const addRow = (label, arr) => {
+      const tr = el("tr");
+      tr.appendChild(el("td", label));
+      [0, 1].forEach((k) => {
+        const td = el("td");
+        td.appendChild(numInput(arr[k], (v) => { arr[k] = v; recalc(); }));
+        tr.appendChild(td);
+      });
+      t.appendChild(tr);
+    };
+    ass.materials.forEach((m) => addRow(m.name + " per m²" + (m.per_coat ? " and coat" : "") + " (" + m.unit + ")", m.per_m2));
+    addRow("Work speed in m² per hour" + (ass.coats ? " and coat" : "") + " (slow / fast)", ass.speed_m2_per_h);
+    addRow(ass.remove_label + ", hours per m²", ass.remove_h_per_m2);
+    wrap.appendChild(t);
+    det.appendChild(wrap);
+    det.appendChild(el("p", "These are typical ranges chosen for this prototype, not supplier data. A real tool would use your own material prices and times.", "small"));
+    box.appendChild(det);
+
+    const cta = el("p", "Quotes like this take a lot of office time. plancraft is software that helps trade businesses write quotes and invoices faster.", "note");
+    cta.style.marginTop = "16px";
+    box.appendChild(cta);
+    const a = el("a", "See how plancraft helps", "btn");
+    a.href = "https://plancraft.com/en-gb";
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.addEventListener("click", () => track("cta"));
+    box.appendChild(a);
+
+    function recalc() {
+      const area = parseFloat(areaIn.value);
+      result.innerHTML = "";
+      lastEstimate = "";
+      if (!(area > 0)) {
+        result.appendChild(el("h3", "No numbers yet"));
+        result.appendChild(el("p", "Need: room area in m². The tool does not guess it."));
+        return;
+      }
+      const r = compute(ass, area, coats > 0 ? coats : 1, removeOld);
+      if (!r) { result.appendChild(el("p", "Please check the work speed, it must be above zero.", "error")); return; }
+      result.appendChild(el("h3", "Rough estimate for " + fmt(area) + " m²"));
+      const parts = [];
+      const ul = el("ul");
+      r.rows.forEach((m) => {
+        const s = m.name + ": " + range(m.lo, m.hi, m.unit);
+        ul.appendChild(el("li", s, "big"));
+        parts.push(s);
+      });
+      const w = "Work time: " + range(r.work.lo, r.work.hi, "hours");
+      ul.appendChild(el("li", w, "big"));
+      parts.push(w);
+      if (r.rm) {
+        const s = ass.remove_label + ": " + range(r.rm.lo, r.rm.hi, "hours");
+        ul.appendChild(el("li", s, "big"));
+        parts.push(s);
+        const tot = "Total time: " + range(r.total.lo, r.total.hi, "hours");
+        ul.appendChild(el("li", tot, "big"));
+        parts.push(tot);
+      }
+      result.appendChild(ul);
+      result.appendChild(el("p", "Rough estimate based on the assumptions below. Not a quote.", "small"));
+      lastEstimate = parts.join("; ");
+    }
+    recalc();
+    box.classList.remove("hidden");
+  }
+
+  // ---------- examples ----------
+  const EXAMPLES = {
+    de: [
+      "Badezimmer, acht Quadratmeter Fliesen, die alten Fliesen müssen raus, neue Duschtasse.",
+      "Hallo, Marco hier. Wohnzimmer bei Frau Keller, nur die Wände, so dreißig Quadratmeter, helles Grau. Alte Tapete ist noch drauf. Sie ist bis zum Fünfzehnten weg, im Haus gibt's keinen Aufzug.",
+    ],
+    en: [
+      "Bathroom, 8 square metres of tiles, remove the old ones, new shower tray.",
+      "Hi, Marco here. Mrs Keller's living room, walls only, about thirty square metres, light grey. Old wallpaper is still on. She is away until the fifteenth, and there is no lift in the building.",
+    ],
+  };
+
+  async function runExample(i) {
+    setError("");
+    track("example");
+    setBusy(true);
+    try { await analyse({ transcript: EXAMPLES[$("lang").value][i] }, false); } catch (e) { setStatus(""); setError(e.message); } finally { setBusy(false); }
+  }
+
+  // ---------- waitlist (premium idea, fake door) ----------
+  $("joinBtn").addEventListener("click", () => {
+    track("premium");
+    $("leadForm").classList.remove("hidden");
+    $("joinBtn").classList.add("hidden");
+  });
+
+  $("send").addEventListener("click", async () => {
+    const email = $("email").value.trim();
+    const msg = $("leadMsg");
+    msg.textContent = "";
+    if (!$("consent").checked) { msg.textContent = "Please tick the consent box first."; return; }
+    const l1 = state.data ? state.data.layer1 : {};
+    try {
+      const res = await fetch(WORKER + "/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email, consent: true, tool: TOOL, site: "",
+          context: { trade: l1.trade, job_type: l1.job_type, interest: "premium waitlist" },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save.");
+      msg.textContent = "Thank you. This is a prototype, so nothing is sent yet. Your interest was recorded for the test.";
+      track("email");
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  });
+
+  $("rec").addEventListener("click", () => {
+    if (busy) return;
+    if (recorder && recorder.state === "recording") stopRecording(); else startRecording();
+  });
+  $("ex1").addEventListener("click", () => runExample(0));
+  $("ex2").addEventListener("click", () => runExample(1));
+
+  track("view");
+</script>
+</body>
+</html>
