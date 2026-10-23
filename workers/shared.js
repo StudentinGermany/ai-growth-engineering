@@ -12,7 +12,7 @@ const DEBUG = true; // set to false before you submit, so error details are not 
 const DAILY_GLOBAL_CAP = 150;
 const DAILY_PER_IP_CAP = 40;
 
-export const TOOLS = ["voice-note", "weather-schedule"];
+export const TOOLS = ["website-check", "weather-schedule", "voice-note"];
 // view = page opened, start = Record clicked, mic = microphone allowed, result = summary from a recording shown,
 // example = example text used instead of a recording, copy = result copied, cta = plancraft link, premium = waitlist interest, email = waitlist email saved
 export const EVENTS = ["view", "start", "mic", "result", "example", "copy", "cta", "premium", "email"];
@@ -21,7 +21,7 @@ export function cors() {
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Admin-Token",
+    "Access-Control-Allow-Headers": "Content-Type",
   };
 }
 
