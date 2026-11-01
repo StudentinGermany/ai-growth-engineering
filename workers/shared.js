@@ -4,7 +4,7 @@
 
 export const MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 const ALLOWED_ORIGIN = "*"; // at the end, restrict to "https://studentingermany.github.io"
-const DEBUG = true; // set to false before you submit, so error details are not shown to visitors
+const DEBUG = flase; // set to false before you submit, so error details are not shown to visitors
 
 // Caps protect the free AI allowance. All tools share them.
 // While you test, the per-IP cap must be higher than the final value.
